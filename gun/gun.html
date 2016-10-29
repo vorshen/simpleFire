@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>index</title>
+    <script id="shader-vs" type="x-shader/vertex-shader">
+        attribute vec3 aPosition;
+        attribute vec3 aColor;
+
+        uniform mat4 uPMatrix;
+        uniform mat4 uMMatrix;
+        uniform mat4 uVMatrix;
+
+        varying vec3 vColor;
+        
+        void main() {
+            gl_Position = uPMatrix * uVMatrix * uMMatrix * vec4(aPosition, 1.0);
+
+            vColor = aColor;
+        }
+    </script>
+    <script id="shader-fs" type="x-shader/fragment-shader">
+        precision lowp float;
+
+        varying vec3 vColor;
+
+        void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+        }
+    </script>
+</head>
+<body>
+    <canvas id="c" width="800" height="600"></canvas>
+    <script>
+        var oC = document.getElementById('c');
+        var webgl = oC.getContext('webgl');
+
+        var vsScript = document.getElementById('shader-vs').innerText;
+        var fsScript = document.getElementById('shader-fs').innerText;
+
+        var vs = webgl.createShader(webgl.VERTEX_SHADER);
+        var fs = webgl.createShader(webgl.FRAGMENT_SHADER);
+
+        webgl.shaderSource(vs, vsScript);
+        webgl.shaderSource(fs, fsScript);
+
+        webgl.compileShader(vs);
+        webgl.compileShader(fs);
+
+        if(!webgl.getShaderParameter(vs, webgl.COMPILE_STATUS)) {
+            alert('vs error');
+        }
+        if(!webgl.getShaderParameter(fs, webgl.COMPILE_STATUS)) {
+            alert('fs error');
+        }
+
+        var program = webgl.createProgram();
+
+        webgl.attachShader(program, vs);
+        webgl.attachShader(program, fs);
+
+        webgl.linkProgram(program);
+        webgl.useProgram(program);
+
+        var aPosition, aColor;
+
+        aPosition = webgl.getAttribLocation(program, 'aPosition');
+        aColor = webgl.getAttribLocation(program, 'aColor');
+
+        webgl.enableVertexAttribArray(aPosition);
+        webgl.disableVertexAttribArray(aColor);
+
+        var uPMatrix, uMMatrix, uVMatrix;
+
+        uPMatrix = webgl.getUniformLocation(program, 'uPMatrix');
+        uMMatrix = webgl.getUniformLocation(program, 'uMMatrix');
+        uVMatrix = webgl.getUniformLocation(program, 'uVMatrix');
+
+        var i, j, a;
+
+        var barrel = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 1,
+                y: 1,
+                z: 1
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0.8, 0.8, 0.8, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    // uMMatrix, false, [c*c,-s,s*c,0, s*c,c,s*s,0, -s,0,c,0, 0,0,-10,1]
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var pipe = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 1,
+                y: -1.2,
+                z: 1
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 1, 1, 1, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    // uMMatrix, false, [c*c,-s,s*c,0, s*c,c,s*s,0, -s,0,c,0, 0,0,-10,1]
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var wheel = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 1,
+                y: -2,
+                z: 1
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0.2, 0.2, 0.2, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var hat = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 0,
+                y: 0.1,
+                z: 0
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0, 0, 0, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var butt = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 0,
+                y: -3.7,
+                z: 0
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0.9, 0.9, 0.9, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var trigger = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0, 0, 0, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var back = {
+            poData: [],
+            poBuf: webgl.createBuffer(),
+            coData: [],
+            indexData: [],
+            indexBuf: webgl.createBuffer(),
+            length: 0,
+            translate: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+            scale: 10,
+            mMatrix: function() {
+                var s = this.scale;
+
+                return [
+                    globalCos / s, 0, -globalSin / s, 0,
+                    0, 1 / s, 0, 0,
+                    globalSin/s, 0, globalCos/s, 0,
+                    0, 0, -1, 1
+                ];
+            },
+            draw: function() {
+                webgl.bindBuffer(webgl.ARRAY_BUFFER, this.poBuf);
+                webgl.vertexAttribPointer(aPosition, 3, webgl.FLOAT, false, 0, 0);
+
+                webgl.vertexAttrib4f(aColor, 0, 0, 0, 1);
+
+                webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER, this.indexBuf);
+                webgl.bufferData(webgl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexData), webgl.STATIC_DRAW);
+
+                webgl.uniformMatrix4fv(
+                    uMMatrix, false, this.mMatrix()
+                );
+
+                webgl.drawElements(webgl.TRIANGLES, this.length, webgl.UNSIGNED_SHORT, 0);
+            }
+        };
+
+        var gun = {
+            barrel: barrel,
+            pipe: pipe,
+            wheel: wheel,
+            hat: hat,
+            butt: butt,
+            back: back,
+            component: [barrel, pipe, wheel, hat, butt, back],
+            angle: -1,
+            draw: function() {
+                // gunAngle += 0.01;
+                gunSin = Math.sin(angle);
+                gunCos = Math.cos(angle);
+
+                this.component.forEach(function(item) {
+                    item.draw();
+                });
+            }
+        };
+
+        var tmp = [];
+        var s = 0;
+
+        /** 计算barrel相关 start **/
+
+        (function() {
+            for(j = 0; j < 21; j++) {
+                angle = 2 * Math.PI * (j / 20);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            }
+
+            for(i = -5; i < 3; i++) {
+                for(j = 0; j < 20; j++) {
+                    barrel.poData.push(i, tmp[j].y, tmp[j].z*0.9);
+                    barrel.poData.push(i+1, tmp[j].y, tmp[j].z*0.9);
+
+                    barrel.poData.push(i+1, tmp[j+1].y, tmp[j+1].z*0.9);
+                    barrel.poData.push(i, tmp[j+1].y, tmp[j+1].z*0.9);
+
+                    barrel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    barrel.length += 6;
+                }
+            }
+
+            i = -5;
+            for(j = 0; j < 20; j++) {
+                barrel.poData.push(i, 0, 0);
+                barrel.poData.push(i, tmp[j].y, tmp[j].z*0.9);
+                barrel.poData.push(i, tmp[j+1].y, tmp[j+1].z*0.9);
+
+                barrel.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                barrel.length += 3;
+            }
+
+            var tmpJ;
+            var k;
+            tmp = [];
+
+            for(j = 0; j < 81; j++) {
+                angle = 2 * Math.PI * (j / 80);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            }
+
+            for(i = 3; i < 5; i++) {
+                for(j = -20; j < 21; j++) {
+                    if(j < 0) {
+                        tmpJ = j + 80;
+                    } else {
+                        tmpJ = j;
+                    }
+
+                    k = 1 - (Math.abs(j) / 20);
+
+                    barrel.poData.push(i-k, tmp[tmpJ].y, tmp[tmpJ].z*0.9);
+                    barrel.poData.push(i+1-k, tmp[tmpJ].y, tmp[tmpJ].z*0.9);
+
+                    barrel.poData.push(i+1-k, tmp[tmpJ+1].y, tmp[tmpJ+1].z*0.9);
+                    barrel.poData.push(i-k, tmp[tmpJ+1].y, tmp[tmpJ+1].z*0.9);
+
+                    barrel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    barrel.length += 6;
+                }
+            }
+
+            i = 5;
+            for(j = -20; j < 21; j++) {
+                if(j < 0) {
+                    tmpJ = j + 80;
+                } else {
+                    tmpJ = j;
+                }
+
+                k = 1 - (Math.abs(j) / 20);
+
+                barrel.poData.push(i-k, tmp[tmpJ].y, tmp[tmpJ].z*0.9);
+                barrel.poData.push(i-k, tmp[tmpJ+1].y, tmp[tmpJ+1].z*0.9);
+                barrel.poData.push(4.5, 0.5, 0);
+
+                barrel.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                barrel.length += 3;
+            }
+
+            barrel.poData.push(4, tmp[0].y, tmp[0].z*0.9);
+            barrel.poData.push(5, tmp[60].y, tmp[60].z*0.9);
+            barrel.poData.push(4.5, 0.5, 0);
+            barrel.indexData.push(s, s+1, s+2);
+            s += 3;
+            barrel.length += 3;
+
+            barrel.poData.push(4, tmp[0].y, tmp[0].z*0.9);
+            barrel.poData.push(5, tmp[20].y, tmp[20].z*0.9);
+            barrel.poData.push(4.5, 0.5, 0);
+            barrel.indexData.push(s, s+1, s+2);
+            s += 3;
+            barrel.length += 3;
+
+            barrel.poData.push(i, tmp[20].y, tmp[20].z*0.9);
+            barrel.poData.push(i, tmp[60].y, tmp[60].z*0.9);
+            barrel.poData.push(4.5, 0.5, 0);
+            barrel.indexData.push(s, s+1, s+2);
+            s += 3;
+            barrel.length += 3;
+
+            tmp = [];
+
+            for(j = 0; j < 41; j++) {
+                angle = 2 * Math.PI * (j / 40);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            }
+
+            // 前面
+            barrel.poData.push(3, 0, tmp[30].z*0.9);
+            barrel.poData.push(4.99, 0, tmp[30].z*0.9);
+            barrel.poData.push(4.99, tmp[35].y-2, tmp[35].z);
+            barrel.poData.push(3, tmp[35].y-2, tmp[35].z);
+            barrel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            barrel.length += 6;
+
+            // 后面
+            barrel.poData.push(3, 0, tmp[10].z*0.9);
+            barrel.poData.push(4.99, 0, tmp[10].z*0.9);
+            barrel.poData.push(4.99, tmp[5].y-2, tmp[5].z);
+            barrel.poData.push(3, tmp[5].y-2, tmp[5].z);
+            barrel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            barrel.length += 6;
+            
+            var tmp1, tmp2;
+            for(j = -5; j < 5; j++) {
+                if(j < 0) {
+                    tmp1 = j + 40;
+                } else {
+                    tmp1 = j;
+                }
+
+                tmp2 = j / 10 * 20;
+
+                if(tmp2 < 0) {
+                    tmp2 = tmp2 + 40;
+                }
+
+                barrel.poData.push(4.99, 0, tmp[tmp2].z*0.9);
+                barrel.poData.push(4.99, 0, tmp[tmp2+2].z*0.9);
+                barrel.poData.push(4.99, tmp[tmp1].y-2, tmp[tmp1+1].z);
+                barrel.poData.push(4.99, tmp[tmp1].y-2, tmp[tmp1].z);
+                barrel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+                s += 4;
+                barrel.length += 6;
+            }
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, barrel.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(barrel.poData), webgl.STATIC_DRAW); 
+        })();
+
+        /** 计算barrel相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算pipe相关 start **/
+
+        (function() {
+            for(j = 0; j < 21; j++) {
+                angle = 2 * Math.PI * (j / 20);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            }
+
+            for(i = -4.9; i < 3; i++) {
+                for(j = 0; j < 20; j++) {
+                    pipe.poData.push(i, tmp[j].y * 0.8 + pipe.translate.y, tmp[j].z * 0.6);
+                    pipe.poData.push(i+1, tmp[j].y * 0.8 + pipe.translate.y, tmp[j].z * 0.6);
+
+                    pipe.poData.push(i+1, tmp[j+1].y * 0.8 + pipe.translate.y, tmp[j+1].z * 0.6);
+                    pipe.poData.push(i, tmp[j+1].y * 0.8 + pipe.translate.y, tmp[j+1].z * 0.6);
+
+                    pipe.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    pipe.length += 6;
+                }
+            }
+
+            i = -4.9;
+            for(j = 0; j < 20; j++) {
+                pipe.poData.push(i, 0, 0);
+                pipe.poData.push(i, tmp[j].y * 0.8 + pipe.translate.y, tmp[j].z * 0.6);
+                pipe.poData.push(i, tmp[j+1].y * 0.8 + pipe.translate.y, tmp[j+1].z * 0.6);
+
+                pipe.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                pipe.length += 3;
+            }
+
+            i = 3;
+            for(j = 0; j < 20; j++) {
+                pipe.poData.push(i, 0, 0);
+                pipe.poData.push(i, tmp[j].y * 0.8 + pipe.translate.y, tmp[j].z * 0.6);
+                pipe.poData.push(i, tmp[j+1].y * 0.8 + pipe.translate.y, tmp[j+1].z * 0.6);
+
+                pipe.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                pipe.length += 3;
+            }
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, pipe.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(pipe.poData), webgl.STATIC_DRAW);
+        })();
+
+        /** 计算pipe相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算wheel相关 start **/
+
+        (function() {
+            for(j = 0; j < 41; j++) {
+                angle = 2 * Math.PI * (j / 40);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            }
+
+            for(i = 3; i < 5; i++) {
+                for(j = 0; j < 40; j++) {
+                    wheel.poData.push(i, tmp[j].y + wheel.translate.y, tmp[j].z);
+                    wheel.poData.push(i+1, tmp[j].y + wheel.translate.y, tmp[j].z);
+
+                    wheel.poData.push(i+1, tmp[j+1].y + wheel.translate.y, tmp[j+1].z);
+                    wheel.poData.push(i, tmp[j+1].y + wheel.translate.y, tmp[j+1].z);
+
+                    wheel.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    wheel.length += 6;
+                }
+            }
+
+            i = 3;
+            for(j = 0; j < 40; j++) {
+                wheel.poData.push(i, wheel.translate.y, 0);
+                wheel.poData.push(i, tmp[j].y + wheel.translate.y, tmp[j].z);
+                wheel.poData.push(i, tmp[j+1].y + wheel.translate.y, tmp[j+1].z);
+
+                wheel.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                wheel.length += 3;
+            }
+
+            i = 4.9;
+            for(j = 0; j < 40; j++) {
+                wheel.poData.push(i, wheel.translate.y, 0);
+                wheel.poData.push(i, tmp[j].y + wheel.translate.y, tmp[j].z);
+                wheel.poData.push(i, tmp[j+1].y + wheel.translate.y, tmp[j+1].z);
+
+                wheel.indexData.push(s, s+1, s+2);
+
+                s += 3;
+
+                wheel.length += 3;
+            }
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, wheel.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(wheel.poData), webgl.STATIC_DRAW);
+        })();
+
+        /** 计算wheel相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算hat相关 start **/
+
+        (function() {
+            [9, 0, 1].forEach(function(item) {
+                angle = 2 * Math.PI * (item / 10);
+
+                tmp.push({
+                    y: Math.cos(angle),
+                    z: Math.sin(angle)
+                });
+            });
+
+            for(i = -5; i < -3; i++) {
+                for(j = 0; j < 2; j++) {
+                    hat.poData.push(i, tmp[j].y, tmp[j].z*0.9);
+                    hat.poData.push(i+1, tmp[j].y, tmp[j].z*0.9);
+
+                    hat.poData.push(i+1, tmp[j+1].y, tmp[j+1].z*0.9);
+                    hat.poData.push(i, tmp[j+1].y, tmp[j+1].z*0.9);
+
+                    hat.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    hat.length += 6;
+                }
+            }
+
+            for(i = -5; i < -3; i++) {
+                for(j = 0; j < 2; j++) {
+                    hat.poData.push(i, tmp[j].y + hat.translate.y, tmp[j].z*0.9);
+                    hat.poData.push(i+1, tmp[j].y + hat.translate.y, tmp[j].z*0.9);
+
+                    hat.poData.push(i+1, tmp[j+1].y + hat.translate.y, tmp[j+1].z*0.9);
+                    hat.poData.push(i, tmp[j+1].y + hat.translate.y, tmp[j+1].z*0.9);
+
+                    hat.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                    s += 4;
+
+                    hat.length += 6;
+                }
+            }
+
+            hat.poData.push(-4.6, tmp[1].y + 0.4, 0);
+            hat.poData.push(-4, tmp[1].y + 0.4, 0);
+
+            hat.poData.push(-4, tmp[1].y, 0);
+            hat.poData.push(-4.6, tmp[1].y, 0);
+
+            hat.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+            s += 4;
+
+            hat.length += 6;
+
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, hat.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(hat.poData), webgl.STATIC_DRAW);
+        })();
+
+        /** 计算hat相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算butt相关 start **/
+
+        (function() {
+            i = 5;
+            var z = 0.9;
+
+            // 上面
+            butt.poData.push(i, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, 1 + butt.translate.y, -z*0.6);
+            butt.poData.push(i, 1 + butt.translate.y, -z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            // 下面
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, -2.3 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, -2.3 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, -z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            // 左面
+            butt.poData.push(i, 1 + butt.translate.y, -z*0.6);
+            butt.poData.push(i, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, z*0.6);
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, -z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            // 右面
+            butt.poData.push(i+1.6, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, 1 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+2.3, -2.3 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+2.3, -2.3 + butt.translate.y, z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            // 前面
+            butt.poData.push(i, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+1.6, 1 + butt.translate.y, z*0.6);
+            butt.poData.push(i+2.3, -2.3 + butt.translate.y, z*0.6);
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            // 后面
+            butt.poData.push(i, 1 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+1.6, 1 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+2.3, -2.3 + butt.translate.y, -z*0.6);
+            butt.poData.push(i+0.7, -2.3 + butt.translate.y, -z*0.6);
+
+            butt.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            butt.length += 6;
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, butt.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(butt.poData), webgl.STATIC_DRAW);
+
+        })();
+
+        /** 计算butt相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算trigger相关 start **/
+
+        (function() {
+            var x = 3.3;
+            var y = -2.2;
+            var z1 = 0.2;
+            var z2 = -0.2;
+            var k = 0;
+            var angle;
+
+            // 右边
+            for(k = 0; k < 5; k++) {
+                angle = Math.PI/2 * (k/5);
+
+                tmp.push({
+                    x: 2 - 2 * Math.sin(angle),
+                    y: -2 * Math.cos(angle)
+                });
+            }
+
+            for(k = 0; k < 4; k++) {
+                trigger.poData.push(x+tmp[k].x, y+tmp[k].y, z2);
+                trigger.poData.push(x+tmp[k].x, y+tmp[k].y, z1);
+
+                trigger.poData.push(x+tmp[k+1].x, y+tmp[k+1].y, z1);
+                trigger.poData.push(x+tmp[k+1].x, y+tmp[k+1].y, z2);
+
+                trigger.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                s += 4;
+
+                trigger.length += 6;
+            }
+
+            // 左边
+            for(k = 0; k < 5; k++) {
+                angle = Math.PI/2 * (k/5);
+
+                tmp.push({
+                    x: 2.1 - 2.1 * Math.sin(angle),
+                    y: -2.1 * Math.cos(angle)
+                });
+            }
+
+            for(k = 0; k < 4; k++) {
+                trigger.poData.push(x+tmp[k+5].x - 0.1, y+tmp[k+5].y, z2);
+                trigger.poData.push(x+tmp[k+5].x - 0.1, y+tmp[k+5].y, z1);
+
+                trigger.poData.push(x+tmp[k+5+1].x - 0.1, y+tmp[k+5+1].y, z1);
+                trigger.poData.push(x+tmp[k+5+1].x - 0.1, y+tmp[k+5+1].y, z2);
+
+                trigger.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                s += 4;
+
+                trigger.length += 6;
+            }
+
+            // 前面
+            for(k = 0; k < 4; k++) {
+                trigger.poData.push(x+tmp[k+5].x - 0.1, y+tmp[k+5].y, z1);
+                trigger.poData.push(x+tmp[k].x, y+tmp[k].y, z1);
+
+                trigger.poData.push(x+tmp[k+1].x, y+tmp[k+1].y, z1);
+                trigger.poData.push(x+tmp[k+5+1].x - 0.1, y+tmp[k+5+1].y, z1);
+
+                trigger.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                s += 4;
+
+                trigger.length += 6;
+            }
+
+            // 后面
+            for(k = 0; k < 4; k++) {
+                trigger.poData.push(x+tmp[k+5].x - 0.1, y+tmp[k+5].y, z2);
+                trigger.poData.push(x+tmp[k].x, y+tmp[k].y, z2);
+
+                trigger.poData.push(x+tmp[k+1].x, y+tmp[k+1].y, z2);
+                trigger.poData.push(x+tmp[k+5+1].x - 0.1, y+tmp[k+5+1].y, z2);
+
+                trigger.indexData.push(s, s+1, s+2, s, s+2, s+3);
+
+                s += 4;
+
+                trigger.length += 6;
+            }
+
+            // 修饰
+            trigger.poData.push(x+tmp[2].x - 0.1, y+tmp[2].y, z1);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y, z1);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y-0.5, z1);
+            
+            trigger.indexData.push(s, s+1, s+2);
+            s += 3;
+            trigger.length += 3;
+
+            trigger.poData.push(x+tmp[2].x - 0.1, y+tmp[2].y, z2);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y, z2);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y-0.5, z2);
+            
+            trigger.indexData.push(s, s+1, s+2);
+            s += 3;
+            trigger.length += 3;
+
+            trigger.poData.push(x+tmp[2].x - 0.1, y+tmp[2].y, z2);
+            trigger.poData.push(x+tmp[2].x - 0.1, y+tmp[2].y, z1);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y-0.5, z1);
+            trigger.poData.push(x+tmp[0].x + 0.1, y+tmp[0].y-0.5, z2);
+            
+            trigger.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            trigger.length += 6;
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, trigger.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(trigger.poData), webgl.STATIC_DRAW);
+        })();
+
+        /** 计算trigger相关 end **/
+
+        tmp = [];
+        s = 0;
+
+        /** 计算back相关 start **/
+        (function() {
+            back.poData.push(3, 1, 0.5);
+            back.poData.push(6.6, 1.2, 0.5);
+
+            back.poData.push(6.6, 1.2, -0.5);
+            back.poData.push(3, 1, -0.5);
+
+            back.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            back.length += 6;
+
+            back.poData.push(6.6, 1.2, 0.5);
+            back.poData.push(5, 0.0, 0.5);
+            back.poData.push(4.2, 1.06, 0.5);
+
+            back.indexData.push(s, s+1, s+2);
+            s += 3;
+            back.length += 3;
+
+            back.poData.push(6.6, 1.2, -0.5);
+            back.poData.push(5, 0.0, -0.5);
+            back.poData.push(4.2, 1.06, -0.5);
+
+            back.indexData.push(s, s+1, s+2);
+            s += 3;
+            back.length += 3;
+
+            back.poData.push(6.6, 1.2, 0.5);
+            back.poData.push(6, 0, 0.5);
+            back.poData.push(5, 0, 0.5);
+
+            back.indexData.push(s, s+1, s+2);
+            s += 3;
+            back.length += 3;
+
+            back.poData.push(6.6, 1.2, -0.5);
+            back.poData.push(6, 0, -0.5);
+            back.poData.push(5, 0, -0.5);
+
+            back.indexData.push(s, s+1, s+2);
+            s += 3;
+            back.length += 3;
+
+            back.poData.push(6.6, 1.2, 0.5);
+            back.poData.push(6.6, 1.2, -0.5);
+            back.poData.push(6, 0, -0.5);
+            back.poData.push(6, 0, 0.5);
+
+            back.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            back.length += 6;
+
+            // 前面
+            back.poData.push(5, 0, 0.5);
+            back.poData.push(6, 0, 0.5);
+            back.poData.push(6.4, -2.7, 0.5);
+            back.poData.push(5, -2.7, 0.5);
+
+            back.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            back.length += 6;
+
+            // 后面
+            back.poData.push(5, 0, -0.5);
+            back.poData.push(6, 0, -0.5);
+            back.poData.push(6.4, -2.7, -0.5);
+            back.poData.push(5, -2.7, -0.5);
+
+            back.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            back.length += 6;
+
+            back.poData.push(6, 0, 0.5);
+            back.poData.push(6, 0, -0.5);
+            back.poData.push(6.4, -2.7, -0.5);
+            back.poData.push(6.4, -2.7, 0.5);
+
+            back.indexData.push(s, s+1, s+2, s, s+2, s+3);
+            s += 4;
+            back.length += 6;
+
+            webgl.bindBuffer(webgl.ARRAY_BUFFER, back.poBuf);
+            webgl.bufferData(webgl.ARRAY_BUFFER, new Float32Array(back.poData), webgl.STATIC_DRAW);
+        })();
+
+        /** 计算back1相关 end **/
+
+        webgl.uniformMatrix4fv(
+            uPMatrix, false, (function(a, r, n, f) {
+                a = 1 / Math.tan(a * Math.PI / 360);
+
+                return [
+                    a/r, 0, 0, 0,
+                    0, a, 0, 0,
+                    0, 0, -(f+n)/(f-n), -1,
+                    0, 0, -2*f*n/(f-n), 0
+                ];
+            })(90, oC.width / oC.height, 0.1, 100)
+        );
+
+        webgl.uniformMatrix4fv(
+            uVMatrix, false, [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]
+        );
+
+        webgl.clearColor(0.3, 0.3, 0.3, 1.0);
+        webgl.clearDepth(1.0);
+
+        webgl.enable(webgl.DEPTH_TEST);
+        webgl.depthFunc(webgl.LESS);
+
+        webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+
+        var gunAngle = -1;
+        var gunSin;
+        var gunCos;
+
+        setInterval(function() {
+            webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+            
+            gun.draw();
+        }, 16);
+        
+    </script>
+</body>
+</html>
