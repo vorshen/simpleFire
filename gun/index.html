@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>index</title>
+    <style>
+        html, body {
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        html {
+            height: 100%;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+        }
+        html {
+            background-color: black;
+        }
+        .aim {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            left: 50%;
+            top: 50%;
+            background-image: url(./aim.png);
+            pointer-events: none;
+            transform-origin: center center;
+            transform: translate(-50%, -50%) scale(.5, .5);
+        }
+        .score {
+            width: 100px;
+            height: 30px;
+            line-height: 30px;
+            font-size: 30px;
+            position: absolute;
+            color: #6a0000;
+            top: 5px;
+            left: 15px;
+            font-style: italic;
+            font-weight: bold;
+            text-shadow: 1px 1px white;
+        }
+    </style>
+    <script id="shader-vs" type="x-shader/vertex-shader">
+        attribute vec3 aPosition;
+        attribute vec3 aColor;
+        attribute vec4 aFrameColor;
+
+        uniform mat4 uPMatrix;
+        uniform mat4 uMMatrix;
+        uniform mat4 uVMatrix;
+
+        uniform bool uIsFrame;
+
+        varying vec4 vColor;
+        varying vec4 vPosition;
+        
+        void main() {
+            gl_Position = uPMatrix * uVMatrix * uMMatrix * vec4(aPosition, 1.0);
+            gl_PointSize = 3.0;
+            if(uIsFrame) {
+                vColor = aFrameColor;
+            } else {
+                vColor = vec4(aColor, 1.0);    
+            }
+        }
+    </script>
+    <script id="shader-fs" type="x-shader/fragment-shader">
+        precision highp float;
+
+        varying vec4 vColor;
+        varying vec4 vPosition;
+
+        void main() {
+            gl_FragColor = vColor;
+        }
+    </script>
+</head>
+<body>
+    <canvas id="c" width="1200" height="800"></canvas>
+    <div class="aim"></div>
+    <div id="bgScore" class="score">0</div>
+    <audio id="bgSound"></audio>
+    <script>
+        var oC = document.getElementById('c');
+        var webgl = oC.getContext('webgl');
+
+        var width = oC.width;
+        var height = oC.height;
+
+    </script>
+    <script src="./js/gun.js"></script>
+    <script src="./js/scene.js"></script>
+    <script src="./js/camera.js"></script>
+    <script src="./js/target.js"></script>
+    <script src="./js/level.js"></script>
+    <script src="./js/bullet.js"></script>
+    <!-- <script src="./test.js"></script> -->
+    <script src="./js/audio.js"></script>
+    <script src="./js/score.js"></script>
+    <script>
+        var vsScript = document.getElementById('shader-vs').innerText;
+        var fsScript = document.getElementById('shader-fs').innerText;
+
+        var vs = webgl.createShader(webgl.VERTEX_SHADER);
+        var fs = webgl.createShader(webgl.FRAGMENT_SHADER);
+
+        webgl.shaderSource(vs, vsScript);
+        webgl.shaderSource(fs, fsScript);
+
+        webgl.compileShader(vs);
+        webgl.compileShader(fs);
+
+        if(!webgl.getShaderParameter(vs, webgl.COMPILE_STATUS)) {
+            alert('vs error');
+        }
+        if(!webgl.getShaderParameter(fs, webgl.COMPILE_STATUS)) {
+            alert('fs error');
+        }
+
+        var program = webgl.createProgram();
+
+        webgl.attachShader(program, vs);
+        webgl.attachShader(program, fs);
+
+        webgl.linkProgram(program);
+        webgl.useProgram(program);
+
+        var aPosition, aColor;
+
+        aPosition = webgl.getAttribLocation(program, 'aPosition');
+        aColor = webgl.getAttribLocation(program, 'aColor');
+        aFrameColor = webgl.getAttribLocation(program, 'aFrameColor');
+
+        webgl.enableVertexAttribArray(aPosition);
+        webgl.enableVertexAttribArray(aColor);
+        webgl.disableVertexAttribArray(aFrameColor);
+
+        var uPMatrix, uMMatrix, uVMatrix;
+
+        var uMMatrix_1, uMMatrix_2;
+
+        uPMatrix = webgl.getUniformLocation(program, 'uPMatrix');
+        uMMatrix = webgl.getUniformLocation(program, 'uMMatrix');
+        uVMatrix = webgl.getUniformLocation(program, 'uVMatrix');
+        uIsFrame = webgl.getUniformLocation(program, 'uIsFrame');
+
+        var i, j, a;
+
+        var projection = (function(a, r, n, f) {
+            a = 1 / Math.tan(a * Math.PI / 360);
+
+            return [
+                a/r, 0, 0, 0,
+                0, a, 0, 0,
+                0, 0, -(f+n)/(f-n), -1,
+                0, 0, -2*f*n/(f-n), 0
+            ];
+        })(90, width / height, 0.1, 1000);
+
+        webgl.uniformMatrix4fv(
+            uPMatrix, false, projection
+        );
+
+        webgl.uniformMatrix4fv(
+            uVMatrix, false, [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]
+        );
+
+        var texture = webgl.createTexture();
+
+        webgl.activeTexture(webgl.TEXTURE0);
+        webgl.bindTexture(webgl.TEXTURE_2D, texture);
+        webgl.texImage2D(webgl.TEXTURE_2D, 0, webgl.RGB, width, height, 0, webgl.RGB, webgl.UNSIGNED_BYTE, null);
+
+        var renderbuffer = webgl.createRenderbuffer();
+        webgl.bindRenderbuffer(webgl.RENDERBUFFER, renderbuffer);
+        webgl.renderbufferStorage(webgl.RENDERBUFFER, webgl.DEPTH_COMPONENT16, width, height);
+
+        var framebuffer = webgl.createFramebuffer();
+        webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
+        webgl.framebufferTexture2D(webgl.FRAMEBUFFER, webgl.COLOR_ATTACHMENT0, webgl.TEXTURE_2D, texture, 0);
+        webgl.framebufferRenderbuffer(webgl.FRAMEBUFFER, webgl.DEPTH_ATTACHMENT, webgl.RENDERBUFFER, renderbuffer);
+
+        webgl.bindTexture(webgl.TEXTURE_2D, null);
+        webgl.bindRenderbuffer(webgl.RENDERBUFFER, null);
+        webgl.bindFramebuffer(webgl.FRAMEBUFFER, null);
+
+        var gun = Gun(webgl);
+        var scenes = Scenes(webgl);
+        var targets = Target(webgl);
+        var bullet = Bullet(webgl);
+        var boom = false;
+
+        level.init();
+        
+
+        webgl.clearColor(1, 1, 1, 1.0);
+        webgl.clearDepth(1.0);
+
+        webgl.enable(webgl.DEPTH_TEST);
+        webgl.depthFunc(webgl.LESS);
+
+        webgl.enable(webgl.BLEND);
+
+        var timer = setInterval(function() {
+            webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+            
+            gun.draw();
+            scenes.draw();
+            targets.draw();
+
+            if(boom) {
+                bullet.draw();
+            }
+            
+        }, 16);
+
+        function dot3D(A, B) {
+            return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+        }
+
+        function normalize3D(A) {
+            var n = Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
+            if(!n)
+                return [0, 0, 0];
+            return [A[0] / n, A[1] / n, A[2] / n];
+        }
+
+        function cross3D(A, B){
+            return [A[1] * B[2] - A[2] * B[1],
+                    A[2] * B[0] - A[0] * B[2],
+                    A[0] * B[1] - A[1] * B[0]];
+        }
+
+        function getAngle(A, B) {
+            if(B[0] === 0 && A[0] === 0) {
+                return 0;
+            }
+
+            var diffX = B[0] - A[0];
+            var diffY = B[1] - A[1];
+
+            var a = A[0] * B[0] + A[1] * B[1];
+            var b = Math.sqrt(A[0] * A[0] + A[1] * A[1]);
+            var c = Math.sqrt(B[0] * B[0] + B[1] * B[1]);
+
+            return (B[0] / Math.abs(B[0])) *  Math.acos(a / b / c);
+        }
+        
+    </script>
+</body>
+</html>
