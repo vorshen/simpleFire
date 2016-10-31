@@ -4,10 +4,31 @@
     <meta charset="UTF-8">
     <title>index</title>
     <style>
+        @keyframes opacity {
+            from {
+                opacity: 0;
+            }
+            23% {
+                opacity: 1;
+            }
+            46% {
+                opacity: 0;
+            }
+            69% {
+                opacity: 1;
+            }
+            92% {
+                opacity: 0;
+            }
+            to {
+                opacity: 0;
+            }
+        }
         html, body {
             padding: 0;
             margin: 0;
             overflow: hidden;
+            font-family: "Segoe UI Light","Segoe UI","Microsoft Jhenghei","微软雅黑",sans-serif;
         }
         html {
             height: 100%;
@@ -37,7 +58,7 @@
             transform: translate(-50%, -50%) scale(.5, .5);
         }
         .score {
-            width: 100px;
+            width: 180px;
             height: 30px;
             line-height: 30px;
             font-size: 30px;
@@ -45,9 +66,48 @@
             color: #6a0000;
             top: 5px;
             left: 15px;
-            font-style: italic;
             font-weight: bold;
             text-shadow: 1px 1px white;
+        }
+        .score span {
+            font-style: italic;
+        }
+        .time {
+            width: 180px;
+            height: 30px;
+            line-height: 30px;
+            font-size: 30px;
+            position: absolute;
+            color: #6a0000;
+            top: 45px;
+            left: 15px;
+            font-weight: bold;
+            text-shadow: 1px 1px white;
+        }
+        .time span {
+            font-style: italic;
+        }
+        .prompt {
+            width: 300px;
+            height: 60px;
+            line-height: 30px;
+            font-size: 30px;
+            color: #5eefff;
+            text-shadow: 1px 1px black;
+            background-image: url(./arrow.png);
+            background-position: 93px 13px;
+            background-repeat: no-repeat;
+            position: absolute;
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+        }
+        .animate {
+            animation-name: opacity;
+            animation-duration: 3s;
         }
     </style>
     <script id="shader-vs" type="x-shader/vertex-shader">
@@ -88,15 +148,17 @@
 <body>
     <canvas id="c" width="1200" height="800"></canvas>
     <div class="aim"></div>
-    <div id="bgScore" class="score">0</div>
-    <audio id="bgSound"></audio>
+    <div class="score">分数： <span id="bgScore">0</span></div>
+    <div class="time">时间： <span id="bgTime">60</span></div>
+    <div id="prompt" class="prompt">第一关</div>
+    <audio id="bgSound1"></audio>
+    <audio id="bgSound2"></audio>
     <script>
         var oC = document.getElementById('c');
         var webgl = oC.getContext('webgl');
 
         var width = oC.width;
         var height = oC.height;
-
     </script>
     <script src="./js/gun.js"></script>
     <script src="./js/scene.js"></script>
@@ -105,6 +167,7 @@
     <script src="./js/level.js"></script>
     <script src="./js/bullet.js"></script>
     <!-- <script src="./test.js"></script> -->
+    <script src="./js/time.js"></script>
     <script src="./js/audio.js"></script>
     <script src="./js/score.js"></script>
     <script>

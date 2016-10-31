@@ -107,22 +107,46 @@
     };
 
     var level = {
+        prompt: document.getElementById('prompt'),
+        isStart: false,
         curr: 0,
         levels: [first, second, third],
+        start: function() {
+            audio.start();
+            time.start();
+        },
+        over: function(sign) {
+            if(sign) {
+                console.log('游戏胜利');
+            } else {
+                console.log('游戏失败');
+            }
+
+            setTimeout(function() {
+                audio.end();
+                time.end();
+            }, 1000);
+        },
         init: function() {
             this.levels[this.curr].init();
         },
         next: function() {
+            var self = this;
             this.curr++;
 
             if(this.curr < 3) {
                 this.init();
-
+                this.prompt.innerHTML = '第' + (this.curr+1) + '关';
+                this.prompt.className = 'prompt animate';
                 setTimeout(function() {
                     audio.done();
                 }, 1000);
+
+                setTimeout(function() {
+                    self.prompt.className = 'prompt';
+                }, 3000);
             } else {
-                this.end();
+                this.over(true);
             }
             
         },
@@ -132,12 +156,8 @@
                 this.next();
             }
         },
-        end: function() {
-            setTimeout(function() {
-                audio.end();
-                // alert('Good Game');
-            }, 1000);
-            
+        showBoard: function() {
+
         }
     };
 

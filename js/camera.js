@@ -80,24 +80,11 @@
         y: oC.height / 2
     };
 
-    /*document.onmousemove = function(e) {
-        // return ;
-        var x = e.clientX;
-        var y = e.clientY;
-
-
-        camera.rx = (x - mouse.x) / 500;
-        camera.ry = (mouse.y - y) / 500;
-
-        if(camera.ry >= Math.PI/2) {
-            camera.ry = Math.PI/2;
-        } else if(camera.ry <= -Math.PI/2) {
-            camera.ry = -Math.PI/2;
-        }
-    };*/
-
     oC.addEventListener('mousedown', function(e) {
-        
+        if(!level.isStart) {
+            level.isStart = true;
+            level.start();
+        }
         oC.requestPointerLock();
     }, false);
 
@@ -105,8 +92,8 @@
 
         if(document.pointerLockElement) {
 
-            camera.rx += (event.movementX / 100);
-            camera.ry += (-event.movementY / 100);
+            camera.rx += (event.movementX / 200);
+            camera.ry += (-event.movementY / 200);
         }
 
         if(camera.ry >= Math.PI/2) {
@@ -138,8 +125,6 @@
         webgl.bindFramebuffer(webgl.FRAMEBUFFER, null);
 
         targets.check(readout);
-
-        // console.log(readout);
 
         webgl.uniform1i(uIsFrame, false);
     };
