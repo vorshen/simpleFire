@@ -120,7 +120,7 @@
 
         var readout = new Uint8Array(1*1*4);
 
-        webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
+        // webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
         webgl.readPixels(x, y, 1, 1, webgl.RGBA, webgl.UNSIGNED_BYTE, readout);
         webgl.bindFramebuffer(webgl.FRAMEBUFFER, null);
 
