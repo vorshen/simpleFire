@@ -48,7 +48,9 @@ var Target = function(webgl) {
                 sy: Math.sin(data.ry),
                 cy: Math.cos(data.ry),
                 rx: 0,
-                moveDir: data.moveDir || 0,
+                moveDirX: data.moveDirX || 0,
+                moveDirY: data.moveDirY || 0,
+                moveDirZ: data.moveDirZ || 0,
                 dead: false,
                 leave: function() {
                     this.tick = data.leave;

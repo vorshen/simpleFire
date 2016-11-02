@@ -98,7 +98,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * 1, globalIndex * 1, -1, 1
                 ];
             },
             draw: function() {
@@ -139,7 +139,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * 1, globalIndex * -1, -1, 1
                 ];
             },
             draw: function() {
@@ -180,7 +180,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * -1, globalIndex * -1, -1, 1
                 ];
             },
             draw: function() {
@@ -220,7 +220,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * -1, globalIndex * 1, -1, 1
                 ];
             },
             draw: function() {
@@ -260,7 +260,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * 0.8, globalIndex * 0.2, -1, 1
                 ];
             },
             draw: function() {
@@ -300,7 +300,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * -0.5, globalIndex * -1, -1, 1
                 ];
             },
             draw: function() {
@@ -340,7 +340,7 @@
                     globalCos / s, 0, -globalSin / s, 0,
                     0, 1 / s, 0, 0,
                     globalSin/s, 0, globalCos/s, 0,
-                    0, 0, -1, 1
+                    globalIndex * -1, globalIndex * 0.5, -1, 1
                 ];
             },
             draw: function() {
@@ -1068,12 +1068,34 @@
 
         webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
 
-        var gunAngle = -1;
-        var gunSin;
-        var gunCos;
+        var angle = 0;
+        var globalSin;
+        var globalCos;
+        var globalIndex = 1;
+        var indexChange = -0.01;
+        var door = false;
 
         setInterval(function() {
             webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+
+            angle -= 0.02;
+            if(globalIndex <= 0 || globalIndex >= 1.1) {
+                if(indexChange !== 0) {
+                    tmp = indexChange * -1;
+                    indexChange = 0;
+                    setTimeout(function() {
+                        indexChange = tmp;
+                        globalIndex += indexChange;
+                    }, 1000);
+                }
+                
+            }
+
+            globalIndex += indexChange;
+            
+
+            globalSin = Math.sin(angle);
+            globalCos = Math.cos(angle);
             
             gun.draw();
         }, 16);

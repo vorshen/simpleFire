@@ -1,10 +1,9 @@
 (function() {
     // 第一关
     var first = {
-        obstacles: [],
         total: 2,
         init: function() {
-            this.obstacles.push(targets.add({
+            targets.add({
                 x: -100,
                 y: 0,
                 z: -400,
@@ -16,10 +15,10 @@
                         this.destory();
                     }
                 }
-            }));
+            });
             
 
-            this.obstacles.push(targets.add({
+            targets.add({
                 x: 100,
                 y: 0,
                 z: -400,
@@ -31,7 +30,7 @@
                         this.destory();
                     }
                 }
-            }));
+            });
         },
         over: function() {
             second.init();
@@ -43,7 +42,6 @@
 
     // 第二关
     var second = {
-        obstacles: [],
         total: 3,
         init: function() {
             var i;
@@ -52,7 +50,7 @@
                     x: 400,
                     y: Math.random() * 300,
                     z: 200 - Math.random() * 400,
-                    moveDir: 0.5 + Math.random(),
+                    moveDirZ: 0.5 + Math.random(),
                     ry: Math.PI / 2,
                     leave: function() {
                         this.rx += 0.3;
@@ -62,11 +60,11 @@
                         }
                     }
                 }, function() {
-                    this.z += this.moveDir;
+                    this.z += this.moveDirZ;
                     if(this.z >= 400) {
-                        this.moveDir *= -1;
+                        this.moveDirZ *= -1;
                     } else if(this.z <= -400) {
-                        this.moveDir *= -1;
+                        this.moveDirZ *= -1;
                     }
                 });
             }
@@ -85,7 +83,7 @@
                     x: 200 - (Math.random() * 400),
                     y: Math.random() * 300,
                     z: 400,
-                    moveDir: 1 + Math.random() * 2,
+                    moveDirX: 1 + Math.random() * 2,
                     ry: 0,
                     leave: function() {
                         this.rx += 0.3;
@@ -95,11 +93,50 @@
                         }
                     }
                 }, function() {
-                    this.x += this.moveDir;
+                    this.x += this.moveDirX;
                     if(this.x >= 400) {
-                        this.moveDir *= -1;
+                        this.moveDirX *= -1;
                     } else if(this.x <= -400) {
-                        this.moveDir *= -1;
+                        this.moveDirX *= -1;
+                    }
+                });
+            }
+        }
+    };
+
+    // 第四关
+    var fourth = {
+        total: 5,
+        init: function() {
+            var i;
+            for(i = 0; i < 5; i++) {
+                targets.add({
+                    x: -400,
+                    y: Math.random() * 300,
+                    z: 200 - Math.random() * 400,
+                    moveDirY: 1.5*(2 - Math.random() * 2),
+                    moveDirZ: 3*(2 - Math.random() * 3 + 1),
+                    ry: Math.PI / 2,
+                    leave: function() {
+                        this.rx += 0.3;
+                        this.x -= 1.5;
+                        if(this.x <= -450) {
+                            this.destory();
+                        }
+                    }
+                }, function() {
+                    this.z += this.moveDirZ;
+                    if(this.z >= 400) {
+                        this.moveDirZ *= -1;
+                    } else if(this.z <= -400) {
+                        this.moveDirZ *= -1;
+                    }
+
+                    this.y += this.moveDirY;
+                    if(this.y >= 300) {
+                        this.moveDirY *= -1;
+                    } else if(this.y <= 10) {
+                        this.moveDirY *= -1;
                     }
                 });
             }
@@ -110,7 +147,7 @@
         prompt: document.getElementById('prompt'),
         isStart: false,
         curr: 0,
-        levels: [first, second, third],
+        levels: [first, second, third, fourth],
         start: function() {
             audio.start();
             time.start();
@@ -134,7 +171,7 @@
             var self = this;
             this.curr++;
 
-            if(this.curr < 3) {
+            if(this.curr < this.levels.length) {
                 this.init();
                 this.prompt.innerHTML = '第' + (this.curr+1) + '关';
                 this.prompt.className = 'prompt animate';
